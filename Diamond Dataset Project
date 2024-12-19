@@ -150,3 +150,6 @@ for column in numeric_columns.columns:
   sns.boxplot(x=diamond_data[column])
   plt.title(f"Box plot of {column}")
   plt.show()
+
+
+THE END!!

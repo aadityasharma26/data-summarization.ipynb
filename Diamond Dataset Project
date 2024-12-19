@@ -1,0 +1,152 @@
+# Import necessary libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import scipy.stats as stats
+import statistics
+
+# Load the dataset into a pandas dataframe
+from google.colab import drive
+drive.mount('/content/drive')
+diamond_data = pd.read_csv('/content/drive/My Drive/Colab Notebooks/diamonds.csv')
+diamond_data
+
+# Select only the numeric columns
+numeric_columns = diamond_data.select_dtypes(include=[np.number])
+numeric_columns
+
+# Conduct exploratory data analysis (EDA)
+# Step-1 Discriptive Statistics
+desc_stats = numeric_columns.describe()
+desc_stats
+
+# Check for missing values
+missing_value = diamond_data.isnull().sum()
+missing_value
+
+# Check for missing values in specific columns (e.g., 'carat', 'cut')
+missing_carat = diamond_data['carat'].isnull().sum()
+missing_carat
+
+# Check is any NaN values
+diamond_data.isna().sum()
+
+# Check the data types of each column
+diamond_data.dtypes
+
+# Check the range of values for each column
+# 'nimeric_columns' contains the numeric columns
+for column in numeric_columns.columns:
+  min_value = diamond_data[column].min()
+  max_value = diamond_data[column].max()
+  print(f"Column '{column}': Range [{min_value}, {max_value}]")
+
+# Check for correlations between columns
+correlation_matrix = numeric_columns.corr()
+correlation_matrix
+
+# Visualize the data using histograms, boxplots, scatterplots, etc.
+
+# Create histogram for numeric columns
+for column in numeric_columns.columns:
+  plt.figure(figsize=(8, 6))
+  plt.hist(diamond_data[column], bins = 20)
+  plt.title(f"Distibution of {column}")
+  plt.xlabel(column)
+  plt.ylabel("Frequency")
+  plt.show()
+
+# Create box plots for numeric columns
+for column in numeric_columns.columns:
+  plt.figure(figsize=(8, 6))
+  sns.boxplot(x=diamond_data[column])
+  plt.title(f"Box plot of {column}")
+  plt.show()
+
+
+# Create scatter plots for pairs of numeric columns
+plt.figure(figsize=(8, 6))
+sns.scatterplot(x='carat', y='price', data=diamond_data)
+plt.title('Scatter Plot of Carat vs Price')
+plt.show()
+
+
+# Identify outliers in the dataset using appropriate techniques
+
+# Calculate z-scores for all numeric features
+for column in numeric_columns.columns:
+    diamond_data[column + '_zscore'] = stats.zscore(diamond_data[column])
+
+# Identify outliers based on z-score threshold (e.g., 3)
+outliers_zscore = diamond_data[(np.abs(diamond_data['carat_zscore']) > 3) | 
+                               (np.abs(diamond_data['depth_zscore']) > 3) |
+                               (np.abs(diamond_data['table_zscore']) > 3) |
+                               (np.abs(diamond_data['price_zscore']) > 3) |
+                               (np.abs(diamond_data['x_zscore']) > 3) |
+                               (np.abs(diamond_data['y_zscore']) > 3) |
+                               (np.abs(diamond_data['z_zscore']) > 3)]
+
+# Print the outliers
+print("Outliers identified using Z-score method:")
+print(outliers_zscore)
+
+
+# Calculate IQR for each numeric feature
+for column in numeric_columns.columns:
+    Q1 = diamond_data[column].quantile(0.25)
+    Q3 = diamond_data[column].quantile(0.75)
+    IQR = Q3 - Q1
+    diamond_data[column + '_outlier'] = (diamond_data[column] < (Q1 - 1.5 * IQR)) | (diamond_data[column] > (Q3 + 1.5 * IQR))
+
+# Identify outliers based on IQR
+outliers_iqr = diamond_data[(diamond_data['carat_outlier']) |
+                           (diamond_data['depth_outlier']) |
+                           (diamond_data['table_outlier']) |
+                           (diamond_data['price_outlier']) |
+                           (diamond_data['x_outlier']) |
+                           (diamond_data['y_outlier']) |
+                           (diamond_data['z_outlier']) ]
+
+# Print the outliers
+print("Outliers identified using IQR method:")
+print(outliers_iqr)
+
+
+# Treat the identified outliers using appropriate techniques
+
+# Winsorization
+
+for column in numeric_columns.columns:
+  lower_percentile = np.percentile(diamond_data[column], 1)
+  upper_percentile = np.percentile(diamond_data[column], 99)
+
+  # Winsorize the column
+  diamond_data[column] = np.clip(diamond_data[column], lower_percentile, upper_percentile)
+winsorized_stats = diamond_data.describe()
+winsorized_stats
+
+from scipy.stats.mstats import winsorize
+
+# Assuming 'diamond_data' is your DataFrame and 'numeric_columns' contains the numeric columns
+for column in numeric_columns.columns:
+    diamond_data[column] = winsorize(diamond_data[column], limits=[0.05, 0.05])  # Capping at 5th and 95th percentiles
+
+
+# Calculate descriptive statistics
+desc_stats_treated = diamond_data[numeric_columns.columns].describe()
+desc_stats_treated
+
+# Visualize the data using histograms, boxplots, scatterplots, etc.
+# ... (Similar to previous EDA visualization code)
+
+# Compare the results of your initial EDA with the EDA after outlier treatment
+# ... (Compare 'desc_stats' and 'desc_stats_treated', visualize distributions, etc.)
+
+# Create box plots for numeric columns
+
+for column in numeric_columns.columns:
+  plt.figure(figsize=(8, 6))
+  sns.boxplot(x=diamond_data[column])
+  plt.title(f"Box plot of {column}")
+  plt.show()
